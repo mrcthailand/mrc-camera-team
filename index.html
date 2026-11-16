@@ -94,8 +94,15 @@ function call(action, params) {
 function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500); }
 
 function load() {
-  call('data').then(d => { setData(d); render(); })
+  call('data').then(d => { if (d.locked) return locked(d.msg); setData(d); render(); })
     .catch(e => { $('main').innerHTML = '<p class="hint">โหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง (' + esc(e.message) + ')</p>'; });
+}
+function locked(msg) {
+  $('hello').textContent = 'ทีมกล้อง คริสตจักรมหาพรรังสิต';
+  $('nav').innerHTML = '';
+  $('main').innerHTML = '<div class="card" style="text-align:center;padding:28px 16px"><div style="font-size:40px">🔒</div>' +
+    '<p style="font-size:18px;font-weight:600;margin:8px 0">' + esc(msg) + '</p>' +
+    '<p class="muted">ลิงก์ส่วนตัวหน้าตาแบบนี้: team.mrcthailand.com/?k=รหัสของคุณ</p></div>';
 }
 function setData(d) {
   D = d; MEINFO = d.me; ME = d.me && d.me.active ? d.me.name : '';
