@@ -3,182 +3,349 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ลงชื่อเวรทีมกล้อง</title>
+<meta name="robots" content="noindex">
+<title>ทีมกล้อง มหาพรรังสิต</title>
 <style>
-  :root { --brand:#1D5C63; --ink:#1F2A2E; --muted:#5B6B6F; --line:#DCE5E5; --soft:#EEF5F4; --warn:#C4622D; }
+  :root { --brand:#1D5C63; --ink:#1F2A2E; --muted:#5B6B6F; --line:#DCE5E5; --soft:#EEF5F4; --bg:#F7F9F9;
+          --warn:#B4530B; --warn-bg:#FFF4E5; --ok:#1F6B45; --ok-bg:#DCEFE6; --bad:#9A2F1C; --bad-bg:#F9DAD3; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif; color:var(--ink); background:#F7F9F9; font-size:17px; }
-  header { background:var(--brand); color:#fff; padding:16px; position:sticky; top:0; z-index:2; }
-  header h1 { font-size:20px; margin:0 0 6px; }
-  .me { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:16px; }
-  select { font-size:17px; padding:8px; border-radius:8px; border:0; min-width:160px; }
-  .quota { background:rgba(255,255,255,.18); padding:4px 10px; border-radius:20px; }
+  body { margin:0; font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif; color:var(--ink); background:var(--bg); font-size:17px; }
+  header { background:var(--brand); color:#fff; padding:14px 16px 0; position:sticky; top:0; z-index:3; }
+  header h1 { font-size:19px; margin:0 0 4px; }
+  .me { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:15px; }
+  .quota { background:rgba(255,255,255,.18); padding:3px 10px; border-radius:20px; }
+  nav { display:flex; gap:4px; margin-top:10px; overflow-x:auto; }
+  nav button { background:transparent; color:#fff; opacity:.75; border:0; border-bottom:3px solid transparent; border-radius:0; padding:10px 12px; min-width:0; font-size:16px; white-space:nowrap; }
+  nav button.on { opacity:1; border-bottom-color:#fff; font-weight:700; }
   main { padding:12px; max-width:560px; margin:0 auto; }
-  .week { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; }
-  .week h2 { font-size:18px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; }
-  .badge { font-size:13px; padding:2px 10px; border-radius:12px; background:#FCE8B2; color:#7D5C06; }
-  .badge.ok { background:#DCEFE6; color:#1F6B45; }
+  .week, .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; }
+  .week h2, .card h2 { font-size:18px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .badge { font-size:13px; padding:2px 10px; border-radius:12px; background:#FCE8B2; color:#7D5C06; font-weight:600; text-align:right; }
+  .badge.ok { background:var(--ok-bg); color:var(--ok); }
   .slot { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line); gap:8px; }
   .slot:first-of-type { border-top:0; }
+  .slot.need { background:var(--warn-bg); margin:0 -12px; padding:10px 12px; }
   .pos { font-weight:600; }
-  .pos small { color:var(--warn); font-weight:400; }
-  .who { color:var(--muted); }
-  button { font-family:inherit; font-size:16px; padding:10px 16px; border-radius:10px; border:0; cursor:pointer; min-width:96px; }
+  .pos small { display:block; color:var(--muted); font-weight:400; font-size:13px; }
+  .pos small.req { color:#C4622D; }
+  .tag { display:block; font-size:13px; color:var(--warn); font-weight:700; }
+  .who { color:var(--muted); text-align:right; }
+  button { font-family:inherit; font-size:16px; padding:10px 14px; border-radius:10px; border:0; cursor:pointer; min-width:96px; }
+  button:disabled { opacity:.5; }
   .take { background:var(--brand); color:#fff; }
   .mine { background:var(--soft); color:var(--brand); border:1px solid var(--brand); }
-  .slot.need { background:#FFF4E5; margin:0 -12px; padding:10px 12px; }
-  .need-tag { display:block; font-size:13px; color:#B4530B; font-weight:600; }
+  .ghost { background:transparent; color:var(--brand); border:1px solid var(--line); }
+  .copy { background:transparent; color:var(--brand); border:1px solid var(--line); width:100%; margin-top:8px; }
   .reasons { display:flex; flex-wrap:wrap; gap:8px; padding:4px 0 12px; }
   .reasons p { width:100%; margin:0; font-size:15px; color:var(--muted); }
   .reasons button { min-width:0; background:var(--soft); color:var(--ink); border:1px solid var(--line); }
-  .reasons .keep { background:transparent; color:var(--brand); }
-  .copy { background:transparent; color:var(--brand); border:1px solid var(--line); width:100%; margin-top:8px; }
   .note { font-size:14px; color:var(--muted); margin:-4px 0 6px; }
-  #toast { position:fixed; left:12px; right:12px; bottom:16px; background:#12363A; color:#fff; padding:14px; border-radius:10px; display:none; text-align:center; }
   .hint { color:var(--muted); font-size:15px; text-align:center; padding:24px 8px; }
+  .muted { color:var(--muted); font-size:14px; }
+  .thanks { background:linear-gradient(135deg,#1D5C63,#2C7A72); color:#fff; border:0; }
+  .thanks h2 { color:#fff; }
+  .nums { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; margin:6px 0 4px; }
+  .nums b { display:block; font-size:30px; line-height:1.1; }
+  .nums span { font-size:13px; opacity:.85; }
+  .months { display:grid; grid-template-columns:repeat(12,1fr); gap:3px; margin-top:12px; align-items:end; height:64px; }
+  .months div { background:rgba(255,255,255,.25); border-radius:3px 3px 0 0; position:relative; min-height:3px; }
+  .months div.on { background:#fff; }
+  .mlabels { display:grid; grid-template-columns:repeat(12,1fr); gap:3px; font-size:10px; text-align:center; opacity:.8; margin-top:3px; }
+  .hist { display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line); font-size:15px; gap:8px; }
+  .hist:first-of-type { border-top:0; }
+  .st { font-size:13px; padding:1px 8px; border-radius:10px; white-space:nowrap; }
+  .st.ok { background:var(--ok-bg); color:var(--ok); } .st.cover { background:#E3ECFA; color:#244C8F; } .st.miss { background:var(--bad-bg); color:var(--bad); }
+  select { font-family:inherit; font-size:16px; padding:8px; border-radius:8px; border:1px solid var(--line); background:#fff; max-width:170px; }
+  .row2 { display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+  .sec { margin-top:12px; padding-top:10px; border-top:2px solid var(--soft); }
+  .sec h3 { font-size:16px; margin:0 0 6px; }
+  .alert { background:var(--warn-bg); border:1px solid #F3D7A6; border-radius:10px; padding:10px; font-size:15px; margin-bottom:8px; }
+  .links a { display:block; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; color:var(--brand); text-decoration:none; font-weight:600; }
+  .links a span { display:block; color:var(--muted); font-weight:400; font-size:14px; }
+  #toast { position:fixed; left:12px; right:12px; bottom:16px; background:#12363A; color:#fff; padding:14px; border-radius:10px; display:none; text-align:center; z-index:5; }
 </style>
 </head>
 <body>
 <header>
-  <h1 id="title">ลงชื่อเวรทีมกล้อง</h1>
-  <div class="me">
-    <span id="hello">กำลังโหลด…</span>
-    <span class="quota" id="quota" hidden></span>
-  </div>
+  <h1 id="title">ทีมกล้อง</h1>
+  <div class="me"><span id="hello">กำลังโหลด…</span><span class="quota" id="quota" hidden></span></div>
+  <nav id="nav"></nav>
 </header>
-<main id="list"><p class="hint">กำลังโหลด…</p></main>
+<main id="main"><p class="hint">กำลังโหลด…</p></main>
 <div id="toast"></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyrtjxK_J51RclVybAoismuXS-NWdJXmR0jrAifHXB3IGbHnnTqAofTA0HQgZStECcICw/exec';
 const TOKEN = (new URLSearchParams(location.search).get('k') || '').replace(/[^A-Za-z0-9]/g, '');
+const REASONS = ['ป่วย', 'ติดธุระ', 'ลา', 'อื่นๆ'];
+const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+let D = null, ME = '', MEINFO = null, TAB = 'table', OPEN = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+
 function call(action, params) {
+  if (window.MOCK_CALL) return window.MOCK_CALL(action, params);
   const q = new URLSearchParams(Object.assign({ api: '1', action: action, k: TOKEN }, params || {}));
   return fetch(API + '?' + q.toString(), { credentials: 'omit', cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
 }
-let DATA = null, ME = '', MEINFO = null, CANCELING = null;
-const $ = id => document.getElementById(id);
-
-function toast(msg) {
-  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500);
-}
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500); }
 
 function load() {
   call('data').then(d => { setData(d); render(); })
-    .catch(e => { $('list').innerHTML = '<p class="hint">โหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง (' + esc(e.message) + ')</p>'; });
+    .catch(e => { $('main').innerHTML = '<p class="hint">โหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง (' + esc(e.message) + ')</p>'; });
 }
-
 function setData(d) {
-  DATA = d; MEINFO = d.me; ME = d.me && d.me.active ? d.me.name : '';
-  $('title').textContent = d.title || 'ลงชื่อเวรทีมกล้อง';
-  if (!d.me) $('hello').textContent = 'ดูตารางอย่างเดียว · ใช้ลิงก์ส่วนตัวเพื่อลงชื่อ';
-  else if (!d.me.active) $('hello').textContent = 'สวัสดี ' + d.me.name + ' · ตอนนี้สถานะคือพัก';
-  else $('hello').textContent = 'สวัสดี ' + d.me.name;
+  D = d; MEINFO = d.me; ME = d.me && d.me.active ? d.me.name : '';
+  $('title').textContent = d.title || 'ทีมกล้อง';
+  $('hello').textContent = !d.me ? 'ดูตารางอย่างเดียว · ใช้ลิงก์ส่วนตัวเพื่อลงชื่อ'
+    : 'สวัสดี ' + d.me.name + (d.me.admin ? ' · บริหาร' : d.me.canSwitch ? ' · Switcher' : '') + (d.me.active ? '' : ' · ตอนนี้พักอยู่');
 }
-
-function myCount() {
-  return DATA.weeks.reduce((n, w) => n + (w.slots.indexOf(ME) !== -1 ? 1 : 0), 0);
+function tabs() {
+  const t = [['table', 'ตารางเวร']];
+  if (MEINFO) t.push(['mine', 'ของฉัน']);
+  if (D.people) t.push(['lead', 'คุมทีม']);
+  if (MEINFO && MEINFO.admin) t.push(['admin', 'บริหาร']);
+  if (!t.some(x => x[0] === TAB)) TAB = 'table';
+  return t;
 }
-
 function render() {
   const q = $('quota');
-  if (ME) { q.hidden = false; q.textContent = 'ลงแล้ว ' + myCount() + ' / ' + DATA.maxPerPerson + ' สัปดาห์'; }
-  else q.hidden = true;
+  if (ME) { q.hidden = false; q.textContent = 'รอบนี้ลงแล้ว ' + myWeeks().length + ' / ' + D.maxPerPerson + ' สัปดาห์'; } else q.hidden = true;
+  $('nav').innerHTML = tabs().map(t => '<button data-t="' + t[0] + '" class="' + (TAB === t[0] ? 'on' : '') + '">' + t[1] + '</button>').join('');
+  $('nav').querySelectorAll('button').forEach(b => b.onclick = () => { TAB = b.dataset.t; OPEN = null; render(); scrollTo(0, 0); });
+  const m = $('main'); m.innerHTML = '';
+  ({ table: viewTable, mine: viewMine, lead: viewLead, admin: viewAdmin })[TAB](m);
+}
 
-  const me = MEINFO;
-  const list = $('list'); list.innerHTML = '';
-  if (!ME) list.innerHTML = '<p class="hint">' + (MEINFO ? 'ติดต่อหัวหน้าทีมถ้าต้องการกลับมาลงเวร' : 'หน้านี้ดูได้อย่างเดียว ถ้าต้องการลงชื่อ ให้เปิดลิงก์ส่วนตัวที่หัวหน้าทีมส่งให้ทาง LINE') + '</p>';
+/* ---------- helpers ---------- */
+const myWeeks = () => D.weeks.filter(w => w.slots.indexOf(ME) !== -1);
+const reqOf = (w, i) => (D.requests || []).find(r => r.row === w.row && r.pos === i);
+const needOf = (w, i) => !w.slots[i] && (D.needs || []).indexOf(w.date + '|' + D.positions[i]) !== -1;
+const isPast = w => w.days < -0.5;
+function canTake(w, i) {
+  return ME && !isPast(w) && !(i === D.switcherIndex && !MEINFO.canSwitch) && w.slots.indexOf(ME) === -1;
+}
+function posLabel(i) {
+  const r = D.req[i];
+  return esc(D.positions[i]) + (r === 'must' ? '<small class="req">★ ต้องมีทุกสัปดาห์</small>' : r === 'walk' ? '<small class="req">☆ ซ้ายหรือขวา อย่างน้อย 1 ข้าง</small>' : '');
+}
+function badge(w) {
+  return w.complete ? '<span class="badge ok">ช่องหลักครบ</span>' : '<span class="badge">ขาด ' + esc(w.missing.join(', ')) + '</span>';
+}
+function el(html, cls) { const d = document.createElement('div'); if (cls) d.className = cls; d.innerHTML = html; return d; }
 
-  DATA.weeks.forEach(w => {
-    const filled = w.slots.slice(0, DATA.requiredCount).filter(Boolean).length;
-    const card = document.createElement('section'); card.className = 'week';
-    const ok = filled === DATA.requiredCount;
-    card.innerHTML = '<h2>อาทิตย์ ' + w.date + '<span class="badge' + (ok ? ' ok' : '') + '">' +
-      (ok ? 'ช่องหลักครบ' : 'ช่องหลักขาด ' + (DATA.requiredCount - filled)) + '</span></h2>' +
-      (w.note ? '<p class="note">' + esc(w.note) + '</p>' : '');
-
-    DATA.positions.forEach((pos, i) => {
-      const who = w.slots[i], row = document.createElement('div');
-      const need = !who && (DATA.needs || []).indexOf(w.date + '|' + pos) !== -1;
-      row.className = 'slot' + (need ? ' need' : '');
-      const req = i < DATA.requiredCount ? ' <small>★ ต้องมี</small>' : '';
-      const tag = need ? '<span class="need-tag">ต้องการคนแทน</span>' : '';
-      let right = '';
-      if (who && who === ME) right = '<button class="mine" data-a="cancel">ยกเลิก</button>';
-      else if (who) right = '<span class="who">' + esc(who) + '</span>';
-      else if (ME && !(i === DATA.switcherIndex && me && !me.canSwitch) && w.slots.indexOf(ME) === -1)
-        right = '<button class="take" data-a="take">' + (need ? 'รับแทน' : 'ลงชื่อ') + '</button>';
-      else right = '<span class="who">ว่าง</span>';
-      row.innerHTML = '<span class="pos">' + esc(pos) + req + tag + '</span>' + right;
-      const b = row.querySelector('button');
-      if (b) b.onclick = () => {
-        if (b.dataset.a === 'take') take(w.row, i, false, b);
-        else { CANCELING = w.row + '|' + i; render(); }
-      };
-      card.appendChild(row);
-      if (CANCELING === w.row + '|' + i) {
-        const box = document.createElement('div'); box.className = 'reasons';
-        box.innerHTML = '<p>ยกเลิกเพราะ… (หัวหน้าทีมเห็นคนเดียว)</p>';
-        ['ป่วย', 'ติดธุระ', 'ลา', 'อื่นๆ'].forEach(rs => {
-          const rb = document.createElement('button'); rb.textContent = rs;
-          rb.onclick = () => drop(w.row, i, rb, rs);
-          box.appendChild(rb);
-        });
-        const kb = document.createElement('button'); kb.className = 'keep'; kb.textContent = 'ไม่ยกเลิก';
-        kb.onclick = () => { CANCELING = null; render(); };
-        box.appendChild(kb);
-        card.appendChild(box);
-      }
-    });
-
-    const c = document.createElement('button'); c.className = 'copy';
-    c.textContent = 'คัดลอกสรุปเวรไปวางในกลุ่ม LINE';
-    c.onclick = () => copyText(summary(w));
-    card.appendChild(c);
-    list.appendChild(card);
+/* ---------- ช่องเวร (ใช้ทั้งหน้า ตารางเวร และ ของฉัน) ---------- */
+function slotRow(w, i) {
+  const who = w.slots[i], req = reqOf(w, i), need = needOf(w, i), past = isPast(w);
+  const row = el('', 'slot' + (need || req ? ' need' : ''));
+  let tag = need ? '<span class="tag">ต้องการคนแทน</span>' : req ? '<span class="tag">' + (who === ME ? 'กำลังหาคนแทนให้คุณ' : 'ขอคนแทน') + '</span>' : '';
+  let right = '';
+  if (who && who === ME && !past) right = req ? '<button class="ghost" data-a="withdraw">ถอนคำขอ</button>'
+    : '<button class="mine" data-a="open">' + (w.days <= D.notifyDays ? 'ขอคนแทน' : 'ยกเลิก') + '</button>';
+  else if (who && req && canTake(w, i)) right = '<div class="row2"><span class="who">' + esc(who) + '</span><button class="take" data-a="take">รับแทน</button></div>';
+  else if (who) right = '<span class="who">' + esc(who) + '</span>';
+  else if (canTake(w, i)) right = '<button class="take" data-a="signup">' + (need ? 'รับแทน' : 'ลงชื่อ') + '</button>';
+  else right = '<span class="who">' + (past ? '–' : 'ว่าง') + '</span>';
+  row.innerHTML = '<span class="pos">' + posLabel(i) + tag + '</span>' + right;
+  row.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const a = b.dataset.a;
+    if (a === 'open') { OPEN = w.row + '|' + i; return render(); }
+    if (a === 'signup') return act('signup', { row: w.row, pos: i, force: '0' }, b, 'ลงชื่อเรียบร้อย ขอบคุณที่รับใช้ครับ', true);
+    if (a === 'take') return act('take', { row: w.row, pos: i }, b, 'รับแทนเรียบร้อย ขอบคุณมากครับ 🙏');
+    if (a === 'withdraw') return act('withdraw', { row: w.row, pos: i }, b, 'ถอนคำขอแล้ว ชื่อคุณยังอยู่ในช่องเดิม');
   });
+  const frag = document.createDocumentFragment(); frag.appendChild(row);
+  if (OPEN === w.row + '|' + i) {
+    const far = w.days > D.notifyDays;
+    const box = el('<p>' + (far ? 'เลือกเหตุผล (หัวหน้าเห็นเท่านั้น) · ถ้าป่วย ระบบจะหาคนแทนให้ ชื่อคุณยังอยู่จนมีคนรับ · เหตุผลอื่นช่องจะว่างทันที'
+      : 'เหลือไม่ถึง ' + D.notifyDays + ' วัน ระบบจะหาคนแทนให้ ชื่อคุณยังอยู่ในช่องจนกว่าจะมีคนรับ · เลือกเหตุผล (หัวหน้าเห็นเท่านั้น)') + '</p>', 'reasons');
+    REASONS.forEach(rs => {
+      const rb = document.createElement('button'); rb.textContent = rs;
+      rb.onclick = () => act('release', { row: w.row, pos: i, reason: rs }, rb, null);
+      box.appendChild(rb);
+    });
+    const kb = document.createElement('button'); kb.className = 'ghost'; kb.textContent = 'ไม่ยกเลิก';
+    kb.onclick = () => { OPEN = null; render(); };
+    box.appendChild(kb);
+    frag.appendChild(box);
+  }
+  return frag;
 }
 
-function take(row, i, force, btn) {
-  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
-  call('signup', { row: row, pos: i, force: force ? '1' : '0' }).then(r => {
-    if (r.ok) { setData(r.data); render(); toast('ลงชื่อเรียบร้อย ขอบคุณที่รับใช้ครับ'); }
-    else if (r.needConfirm) { if (confirm(r.msg)) take(row, i, true, btn); else render(); }
-    else { toast(r.msg); load(); }
-  }).catch(e => { toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'); load(); });
-}
-
-function drop(row, i, btn, reason) {
-  btn.disabled = true; btn.textContent = 'กำลังยกเลิก…';
-  call('cancel', { row: row, pos: i, reason: reason }).then(r => {
-    CANCELING = null;
-    if (r.ok) { setData(r.data); render(); toast('ยกเลิกแล้ว ขอให้หายดี/ผ่านไปด้วยดีนะครับ ระบบแจ้งหัวหน้าทีมให้แล้ว'); }
-    else { toast(r.msg); load(); }
-  }).catch(e => { CANCELING = null; toast('ยกเลิกไม่สำเร็จ ลองใหม่อีกครั้ง'); load(); });
+function act(action, params, btn, okMsg, quota) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'กำลังบันทึก…';
+  return call(action, params).then(r => {
+    OPEN = null;
+    if (r.ok) {
+      setData(r.data); render();
+      toast(okMsg || (r.mode === 'request' ? 'ส่งคำขอคนแทนแล้ว ระบบแจ้งหัวหน้าให้แล้ว ขอให้หายไว ๆ/ผ่านไปด้วยดีนะครับ' : 'ยกเลิกแล้ว ขอบคุณที่แจ้งล่วงหน้าครับ'));
+    } else if (r.needConfirm && quota) {
+      if (confirm(r.msg)) { btn.textContent = old; return act(action, Object.assign({}, params, { force: '1' }), btn, okMsg); }
+      render();
+    } else { toast(r.msg); load(); }
+  }).catch(() => { OPEN = null; toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'); load(); });
 }
 
 function summary(w) {
   let t = 'เวรทีมกล้อง อาทิตย์ ' + w.date + (w.note ? ' (' + w.note + ')' : '');
-  const needs = DATA.positions.filter((p, i) => !w.slots[i] && (DATA.needs || []).indexOf(w.date + '|' + p) !== -1);
-  if (needs.length) t = 'ด่วน: ต้องการคนแทน ' + needs.join(', ') + '\n' + t;
-  DATA.positions.forEach((p, i) => { if (i < DATA.requiredCount || w.slots[i]) t += '\n' + p + ': ' + (w.slots[i] || '(ว่าง)'); });
-  if (needs.length) t += '\nลงชื่อผ่านลิงก์ส่วนตัวของตัวเองได้เลยครับ';
+  const urgent = D.positions.filter((p, i) => needOf(w, i) || reqOf(w, i));
+  if (urgent.length) t = 'ด่วน: ต้องการคนแทน ' + urgent.join(', ') + '\n' + t;
+  D.positions.forEach((p, i) => { if (D.req[i] === 'must' || w.slots[i]) t += '\n' + p + ': ' + (w.slots[i] || '(ว่าง)'); });
+  if (!w.complete) t += '\nยังขาด: ' + w.missing.join(', ');
+  if (urgent.length || !w.complete) t += '\nใครว่าง ลงผ่านลิงก์ส่วนตัวได้เลยครับ 🙏';
   return t;
 }
-
 function copyText(t) {
   const done = () => toast('คัดลอกแล้ว ไปวางในกลุ่ม LINE ได้เลย');
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => fallback(t, done));
-  else fallback(t, done);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => prompt('คัดลอกข้อความนี้', t));
+  else prompt('คัดลอกข้อความนี้', t);
 }
-function fallback(t, done) {
-  const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
-  try { document.execCommand('copy'); done(); } catch (e) { prompt('คัดลอกข้อความนี้', t); }
-  a.remove();
+function weekCard(w, onlyMine) {
+  const card = el('<h2>อาทิตย์ ' + esc(w.date) + badge(w) + '</h2>' + (w.note ? '<p class="note">' + esc(w.note) + '</p>' : ''), 'week');
+  D.positions.forEach((p, i) => { if (!onlyMine || w.slots[i] === ME) card.appendChild(slotRow(w, i)); });
+  if (!onlyMine) {
+    const c = document.createElement('button'); c.className = 'copy'; c.textContent = 'คัดลอกสรุปเวรไปวางในกลุ่ม LINE';
+    c.onclick = () => copyText(summary(w)); card.appendChild(c);
+  }
+  return card;
 }
-function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]); }
+
+/* ---------- แท็บ: ตารางเวร ---------- */
+function viewTable(m) {
+  if (!MEINFO) m.appendChild(el('<p class="hint">หน้านี้ดูได้อย่างเดียว ถ้าต้องการลงชื่อ ให้เปิดลิงก์ส่วนตัวที่หัวหน้าทีมส่งให้ทาง LINE</p>'));
+  else if (!ME) m.appendChild(el('<p class="hint">ตอนนี้สถานะของคุณคือพัก ติดต่อหัวหน้าทีมถ้าต้องการกลับมาลงเวร</p>'));
+  const open = (D.requests || []).filter(r => r.name !== ME);
+  if (ME && open.length) m.appendChild(el('<div class="alert"><b>มีคนขอคนแทน ' + open.length + ' ช่อง</b> · ' +
+    open.map(r => esc(r.date + ' ' + r.position)).join(', ') + ' · กด "รับแทน" ในตารางด้านล่างได้เลย</div>'));
+  D.weeks.filter(w => !isPast(w)).forEach(w => m.appendChild(weekCard(w)));
+  if (!D.weeks.some(w => !isPast(w))) m.appendChild(el('<p class="hint">รอบนี้จบแล้ว รอหัวหน้าเปิดรอบใหม่</p>'));
+}
+
+/* ---------- แท็บ: ของฉัน ---------- */
+function viewMine(m) {
+  const s = D.stats || { thisYear: 0, thisMonth: 0, total: 0, months: [], recent: [], byPosition: {}, covered: 0 };
+  const max = Math.max(1, ...s.months);
+  const nowM = new Date().getMonth();
+  m.appendChild(el('<h2>ขอบคุณที่รับใช้ 🙏</h2>' +
+    '<div class="nums"><div><b>' + s.thisMonth + '</b><span>ครั้ง เดือนนี้</span></div><div><b>' + s.thisYear + '</b><span>ครั้ง ปี ' + (s.year || '') + '</span></div><div><b>' + s.total + '</b><span>ครั้ง ทั้งหมด</span></div></div>' +
+    '<div class="months">' + s.months.map((n, i) => '<div class="' + (i === nowM ? 'on' : '') + '" style="height:' + Math.round(n / max * 100) + '%" title="' + MONTHS[i] + ' ' + n + ' ครั้ง"></div>').join('') + '</div>' +
+    '<div class="mlabels">' + MONTHS.map(x => '<span>' + x.replace('.', '').slice(0, 2) + '</span>').join('') + '</div>' +
+    (s.covered ? '<p style="margin:10px 0 0;font-size:15px">รับแทนเพื่อนในทีม ' + s.covered + ' ครั้ง ❤️</p>' : ''), 'card thanks'));
+
+  const mine = myWeeks().filter(w => !isPast(w));
+  const up = el('<h2>เวรที่จะมาถึง</h2>', 'card');
+  if (!mine.length) up.appendChild(el('<p class="muted">' + (ME ? 'ยังไม่ได้ลงเวรในรอบนี้ ไปที่แท็บ "ตารางเวร" เพื่อลงชื่อ' : 'ไม่มีเวร') + '</p>'));
+  m.appendChild(up);
+  mine.forEach(w => m.appendChild(weekCard(w, true)));
+
+  const pos = Object.keys(s.byPosition || {});
+  const h = el('<h2>ประวัติการรับใช้</h2>' + (pos.length ? '<p class="muted">' + pos.map(p => esc(p) + ' ' + s.byPosition[p]).join(' · ') + '</p>' : ''), 'card');
+  if (!s.recent.length) h.appendChild(el('<p class="muted">ยังไม่มีประวัติ จะเริ่มนับหลังรับใช้ครั้งแรก</p>'));
+  s.recent.forEach(r => {
+    const cls = r.status === 'รับใช้แทน' ? 'cover' : r.status === 'ขาด' ? 'miss' : 'ok';
+    h.appendChild(el('<span>' + esc(r.date) + ' · ' + esc(r.position) + (r.note && r.status === 'รับใช้แทน' ? ' <span class="muted">(' + esc(r.note) + ')</span>' : '') + '</span><span class="st ' + cls + '">' + esc(r.status) + '</span>', 'hist'));
+  });
+  m.appendChild(h);
+}
+
+/* ---------- แท็บ: คุมทีม (Switcher ของสัปดาห์ / บริหาร) ---------- */
+function viewLead(m) {
+  const weeks = D.weeks.filter(w => (MEINFO.admin || w.slots[D.switcherIndex] === MEINFO.name) && w.days > -8);
+  if (!weeks.length) return m.appendChild(el('<p class="hint">สัปดาห์ที่คุณเป็น Switcher จะขึ้นที่นี่ ให้คุณดูแลทีมของวันนั้น</p>'));
+  m.appendChild(el('<p class="muted" style="margin:0 0 10px">' + (MEINFO.admin ? 'บริหาร: แก้ได้ทุกสัปดาห์' : 'คุณดูแลทีมในสัปดาห์ที่คุณเป็น Switcher') + ' · เลือกชื่อเพื่อใส่คนแทนหรือเปลี่ยนคน</p>'));
+  weeks.forEach(w => m.appendChild(leadCard(w)));
+}
+function nameOptions(i, cur) {
+  const ppl = D.people.filter(p => i !== D.switcherIndex || p.canSwitch);
+  return '<option value="">— ว่าง —</option>' + ppl.map(p => '<option' + (p.name === cur ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') +
+    (cur && !ppl.some(p => p.name === cur) ? '<option selected>' + esc(cur) + '</option>' : '');
+}
+function leadCard(w) {
+  const card = el('<h2>อาทิตย์ ' + esc(w.date) + badge(w) + '</h2>', 'week');
+  const reqs = (D.requests || []).filter(r => r.row === w.row);
+  if (reqs.length) card.appendChild(el(reqs.map(r => '<b>' + esc(r.name) + '</b> ขอคนแทน ' + esc(r.position) + (r.reason ? ' · เหตุผล: ' + esc(r.reason) : '')).join('<br>') +
+    '<br><span class="muted">รอคนกด "รับแทน" หรือเลือกชื่อคนแทนในช่องด้านล่าง</span>', 'alert'));
+  D.positions.forEach((p, i) => {
+    const who = w.slots[i], lock = isPast(w) || (i === D.switcherIndex && !MEINFO.admin);
+    const r = el('<span class="pos">' + posLabel(i) + (reqOf(w, i) ? '<span class="tag">ขอคนแทน</span>' : needOf(w, i) ? '<span class="tag">ต้องการคนแทน</span>' : '') + '</span>' +
+      (lock ? '<span class="who">' + esc(who) + '</span>' : '<select>' + nameOptions(i, who) + '</select>'), 'slot' + (reqOf(w, i) || needOf(w, i) ? ' need' : ''));
+    const sel = r.querySelector('select');
+    if (sel) sel.onchange = () => {
+      const v = sel.value;
+      if (!confirm((v ? 'ใส่ ' + v : 'ล้างชื่อ' + (who ? ' ' + who : '')) + ' ในช่อง ' + p + ' วันที่ ' + w.date + '?')) { sel.value = who; return; }
+      sel.disabled = true;
+      call('assign', { row: w.row, pos: i, name: v }).then(res => {
+        if (res.ok) { setData(res.data); render(); toast('บันทึกแล้ว'); } else { toast(res.msg); load(); }
+      }).catch(() => { toast('บันทึกไม่สำเร็จ'); load(); });
+    };
+    card.appendChild(r);
+  });
+  const c = document.createElement('button'); c.className = 'copy'; c.textContent = 'คัดลอกสรุปเวรไปวางในกลุ่ม LINE';
+  c.onclick = () => copyText(summary(w)); card.appendChild(c);
+  if (w.days <= 0.25) card.appendChild(logSection(w));
+  else card.appendChild(el('<p class="muted" style="margin:10px 0 0">บันทึกหลังนมัสการจะเปิดให้กรอกในวันอาทิตย์ ' + esc(w.date) + '</p>'));
+  return card;
+}
+function savedLog(w, i) {
+  const rows = ((D.logRows || {})[w.date] || []).filter(r => r.pos === i);
+  const cover = rows.find(r => r.status === 'รับใช้แทน');
+  if (cover) return { st: 'แทน', sub: cover.name };
+  if (rows.some(r => r.status === 'ขาด')) return { st: 'ขาด', sub: '' };
+  return { st: w.slots[i] ? 'มา' : '', sub: '' };
+}
+function logSection(w) {
+  const st = (D.logged || {})[w.date];
+  if (st === 'ยืนยันแล้ว' && OPEN !== 'log|' + w.row) {
+    const lines = D.positions.map((p, i) => {
+      const v = savedLog(w, i);
+      if (v.st === 'แทน') return esc(p) + ': ' + esc(v.sub) + ' <span class="st cover">มาแทน' + (w.slots[i] ? ' ' + esc(w.slots[i]) : '') + '</span>';
+      if (v.st === 'ขาด') return esc(p) + ': ' + esc(w.slots[i]) + ' <span class="st miss">ขาด</span>';
+      return w.slots[i] ? esc(p) + ': ' + esc(w.slots[i]) : '';
+    }).filter(Boolean);
+    const sec = el('<h3>บันทึกหลังนมัสการ <span class="st ok">บันทึกแล้ว ✓</span></h3><p style="margin:0 0 8px;font-size:15px;line-height:1.7">' + lines.join('<br>') + '</p>', 'sec');
+    const eb = document.createElement('button'); eb.className = 'ghost'; eb.textContent = 'แก้ไขบันทึก';
+    eb.onclick = () => { OPEN = 'log|' + w.row; render(); };
+    sec.appendChild(eb);
+    return sec;
+  }
+  const sec = el('<h3>บันทึกหลังนมัสการ ' + (st === 'ยืนยันแล้ว' ? '<span class="st ok">บันทึกแล้ว ✓</span>' : st === 'auto' ? '<span class="st cover">ระบบบันทึกตามตารางให้แล้ว</span>' : '') + '</h3>' +
+    '<p class="muted" style="margin:0 0 6px">ตัวเลขนี้คือประวัติการรับใช้ของแต่ละคน ถ้าทุกคนมาตามตาราง กดบันทึกได้เลย</p>', 'sec');
+  D.positions.forEach((p, i) => {
+    const who = w.slots[i];
+    const r = el('<span class="pos">' + esc(p) + '<small>' + esc(who || 'ช่องว่าง') + '</small></span>' +
+      '<div class="row2"><select data-k="st">' + (who ? '<option value="มา">มาตามตาราง</option><option value="ขาด">ขาด</option>' : '<option value="">ไม่มีคน</option>') +
+      '<option value="แทน">มีคนมาแทน/มาเพิ่ม</option></select><select data-k="sub" hidden>' + nameOptions(-1, '') + '</select></div>', 'slot');
+    r.dataset.pos = i;
+    const s1 = r.querySelector('[data-k=st]'), s2 = r.querySelector('[data-k=sub]');
+    const v = savedLog(w, i);
+    s1.value = v.st; if (v.sub) s2.value = v.sub; s2.hidden = v.st !== 'แทน';
+    s1.onchange = () => { s2.hidden = s1.value !== 'แทน'; };
+    sec.appendChild(r);
+  });
+  const b = document.createElement('button'); b.className = 'take'; b.style.width = '100%'; b.style.marginTop = '8px'; b.textContent = 'บันทึกหลังนมัสการ';
+  b.onclick = () => {
+    const entries = [];
+    for (const r of sec.querySelectorAll('.slot')) {
+      const s1 = r.querySelector('[data-k=st]').value, s2 = r.querySelector('[data-k=sub]').value;
+      if (s1 === 'แทน' && !s2) return toast('เลือกชื่อคนที่มาแทนด้วยครับ');
+      entries.push({ pos: Number(r.dataset.pos), status: s1 || 'มา', sub: s2 });
+    }
+    b.disabled = true; b.textContent = 'กำลังบันทึก…';
+    call('log', { row: w.row, entries: JSON.stringify(entries) }).then(res => {
+      if (res.ok) { OPEN = null; setData(res.data); render(); toast('บันทึกแล้ว ขอบคุณที่ดูแลทีมครับ'); } else { toast(res.msg); load(); }
+    }).catch(() => { toast('บันทึกไม่สำเร็จ'); load(); });
+  };
+  sec.appendChild(b);
+  return sec;
+}
+
+/* ---------- แท็บ: บริหาร ---------- */
+function viewAdmin(m) {
+  m.appendChild(el('<a href="dashboard.html?k=' + TOKEN + '">แดชบอร์ดทีม<span>ภาพรวมรอบนี้ ภาระรายคน สรุปการรับใช้รายเดือน การยกเลิกและเหตุผล</span></a>' +
+    '<a href="links.html?k=' + TOKEN + '">ส่งลิงก์ส่วนตัวให้ทีม<span>คัดลอกหรือส่งทาง LINE ทีละคน ติ๊กว่าส่งแล้ว</span></a>' +
+    '<p class="muted">ตั้งสถานะพัก / รับรอง Switcher / เพิ่มคนใหม่: แก้ในชีต แท็บรายชื่อ (คนใหม่: รัน generateLinks)</p>', 'links'));
+}
 
 load();
 </script>

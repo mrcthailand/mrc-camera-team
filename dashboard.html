@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>แดชบอร์ดทีมกล้อง</title>
+<meta name="robots" content="noindex">
 <style>
   :root { --brand:#1D5C63; --ink:#1F2A2E; --muted:#5B6B6F; --line:#DCE5E5; --soft:#EEF5F4; --bg:#F7F9F9;
           --ok-bg:#DCEFE6; --ok:#1F6B45; --warn-bg:#FCE8B2; --warn:#7D5C06; --bad-bg:#F9DAD3; --bad:#9A2F1C; }
@@ -72,38 +73,42 @@ function load() {
 }
 
 function render(d) {
-  const R = d.requiredCount, need = d.needs || [];
+  const need = d.needs || [], reqs = d.requests || [];
   const weeks = d.weeks, P = d.positions;
-  $('sub').textContent = 'รอบ ' + weeks[0].date + ' – ' + weeks[weeks.length - 1].date + ' · อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  const isReq = (w, i) => reqs.some(r => r.row === w.row && r.pos === i);
+  const isNeed = (w, i) => !w.slots[i] && need.indexOf(w.date + '|' + P[i]) !== -1;
+  const walkEmpty = w => !P.some((p, i) => d.req[i] === 'walk' && w.slots[i]);
+  $('sub').innerHTML = 'รอบ ' + esc(weeks[0].date) + ' – ' + esc(weeks[weeks.length - 1].date) + ' · อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) +
+    ' · <a style="color:#fff" href="./?k=' + TOKEN + '">← หน้าทีม</a>';
 
-  const okWeeks = weeks.filter(w => w.slots.slice(0, R).every(Boolean)).length;
+  const okWeeks = weeks.filter(w => w.complete).length;
   const filled = weeks.reduce((n, w) => n + w.slots.filter(Boolean).length, 0);
   const total = weeks.length * P.length;
   const active = d.people.filter(p => p.active);
   const notYet = active.filter(p => p.count === 0);
   const over = active.filter(p => p.count > d.maxPerPerson);
+  const urgent = need.length + reqs.length;
   const tile = (lbl, num, sub, cls) => '<div class="tile"><div class="lbl">' + lbl + '</div><div class="num">' + num + '</div><div class="sub">' + (cls ? '<span class="status ' + cls + '">' + sub + '</span>' : sub) + '</div></div>';
 
   let h = '<section class="tiles">' +
     tile('สัปดาห์ที่ช่องบังคับครบ', okWeeks + ' / ' + weeks.length, okWeeks === weeks.length ? '✓ ครบทุกสัปดาห์' : '! ยังขาด ' + (weeks.length - okWeeks) + ' สัปดาห์', okWeeks === weeks.length ? 's-ok' : 's-warn') +
-    tile('ต้องการคนแทน', need.length, need.length ? '✕ มีคนยกเลิก ต้องหาคนแทน' : '✓ ไม่มี', need.length ? 's-bad' : 's-ok') +
+    tile('ต้องการคนแทน', urgent, urgent ? '✕ ขอคนแทน ' + reqs.length + ' · ช่องว่างหลังยกเลิก ' + need.length : '✓ ไม่มี', urgent ? 's-bad' : 's-ok') +
     tile('ช่องที่ลงชื่อแล้ว', filled + ' / ' + total, Math.round(filled / total * 100) + '% ของทุกช่อง') +
     tile('ยังไม่ได้ลงเลย', notYet.length + ' คน', over.length ? over.length + ' คนลงเกินโควตา' : 'จาก ' + active.length + ' คนที่รับใช้อยู่') +
     '</section>';
 
-  h += '<h2>ตารางเวรรอบนี้</h2><div class="card grid-wrap"><table><tr><th>อาทิตย์</th>' +
-    P.map((p, i) => '<th>' + esc(p) + (i < R ? ' ★' : '') + '</th>').join('') + '<th>สถานะ</th></tr>';
+  h += '<h2>ตารางเวรรอบนี้ <span class="muted">★ ต้องมี · ☆ กล้องเดินอย่างน้อย 1 ข้าง</span></h2><div class="card grid-wrap"><table><tr><th>อาทิตย์</th>' +
+    P.map((p, i) => '<th>' + esc(p) + (d.req[i] === 'must' ? ' ★' : d.req[i] === 'walk' ? ' ☆' : '') + '</th>').join('') + '<th>สถานะ</th></tr>';
   weeks.forEach(w => {
-    const miss = w.slots.slice(0, R).filter(x => !x).length;
-    const hasNeed = P.some((p, i) => !w.slots[i] && need.indexOf(w.date + '|' + p) !== -1);
+    const hasUrgent = P.some((p, i) => isNeed(w, i) || isReq(w, i));
     h += '<tr><td><b>' + esc(w.date) + '</b>' + (w.note ? '<div class="muted">' + esc(w.note) + '</div>' : '') + '</td>';
     P.forEach((p, i) => {
       const v = w.slots[i];
-      const isNeed = !v && need.indexOf(w.date + '|' + p) !== -1;
-      const cls = v ? 'fill' : isNeed ? 'need' : i < R ? 'empty' : 'opt';
-      h += '<td><span class="cell ' + cls + '">' + (v ? esc(v) : isNeed ? 'ต้องการคนแทน' : i < R ? 'ว่าง' : '–') + '</span></td>';
+      const empty = d.req[i] === 'must' || (d.req[i] === 'walk' && walkEmpty(w));
+      const cls = isReq(w, i) ? 'need' : v ? 'fill' : isNeed(w, i) ? 'need' : empty ? 'empty' : 'opt';
+      h += '<td><span class="cell ' + cls + '">' + (v ? esc(v) + (isReq(w, i) ? ' (ขอคนแทน)' : '') : isNeed(w, i) ? 'ต้องการคนแทน' : empty ? 'ว่าง' : '–') + '</span></td>';
     });
-    h += '<td>' + (hasNeed ? '<span class="status s-bad">✕ หาคนแทน</span>' : miss ? '<span class="status s-warn">! ขาด ' + miss + '</span>' : '<span class="status s-ok">✓ ครบ</span>') + '</td></tr>';
+    h += '<td>' + (hasUrgent ? '<span class="status s-bad">✕ หาคนแทน</span>' : !w.complete ? '<span class="status s-warn">! ขาด ' + w.missing.length + '</span>' : '<span class="status s-ok">✓ ครบ</span>') + '</td></tr>';
   });
   h += '</table></div>';
 
@@ -117,13 +122,23 @@ function render(d) {
     h += '<div class="person' + (p.active ? '' : ' rest') + '"><div>' + esc(p.name) + (p.canSwitch ? '<span class="tag">SW</span>' : '') + '</div>' +
       '<div class="bar" title="' + esc(p.weeks.join(', ')) + '">' + bar + '</div><div>' + right + '</div></div>';
   });
-  h += '<p class="muted">SW = คุม Switcher ได้ · แถบหนึ่งช่อง = หนึ่งสัปดาห์ · แตะค้างที่แถบเพื่อดูวันที่</p>';
-  h += '<div class="actions"><button id="remind">คัดลอกข้อความชวนคนที่ยังไม่ลง</button><button id="needBtn">คัดลอกข้อความหาคนแทน</button></div></div>';
+  h += '<p class="muted">SW = คุม Switcher ได้ · แถบหนึ่งช่อง = หนึ่งสัปดาห์</p>';
+  h += '<div class="actions"><button id="remind">คัดลอกข้อความชวนคนที่ยังไม่ลง</button><button id="needBtn">คัดลอกข้อความหาคนเพิ่ม</button><button onclick="location.href=\'links.html?k=\'+TOKEN">ส่งลิงก์ให้ทีม →</button></div></div>';
 
-  h += '<h2>การยกเลิกล่าสุด <span class="muted">(เห็นเฉพาะหัวหน้า)</span></h2><div class="card">';
-  if (!d.cancels.length) h += '<p class="muted">ยังไม่มีการยกเลิก</p>';
-  else h += '<table><tr><th>เมื่อ</th><th>เวร</th><th>ใคร</th><th>เหตุผล</th></tr>' +
-    d.cancels.map(c => '<tr><td class="muted">' + esc(c.time) + '</td><td>' + esc(c.date) + ' · ' + esc(c.pos) + '</td><td>' + esc(c.name) + '</td><td>' + esc(c.reason || '–') + '</td></tr>').join('') + '</table>';
+  const T = d.team || { year: '', people: [] };
+  const tp = T.people.filter(p => p.active || p.year).sort((a, b) => b.year - a.year || a.name.localeCompare(b.name, 'th'));
+  const MN = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const teamYear = tp.reduce((n, p) => n + p.year, 0);
+  h += '<h2>การรับใช้ปี ' + esc(T.year) + ' <span class="muted">(รวม ' + teamYear + ' ครั้ง · นับจากบันทึกหลังนมัสการ)</span></h2><div class="card grid-wrap"><table><tr><th>ชื่อ</th>' +
+    MN.map(m => '<th style="text-align:center">' + m + '</th>').join('') + '<th style="text-align:center">ปีนี้</th><th style="text-align:center">รับแทน</th></tr>' +
+    tp.map(p => '<tr><td>' + esc(p.name) + '</td>' + p.months.map(n => '<td style="text-align:center">' + (n || '<span class="muted">·</span>') + '</td>').join('') +
+      '<td style="text-align:center"><b>' + p.year + '</b></td><td style="text-align:center">' + (p.covered || '') + '</td></tr>').join('') + '</table>' +
+    (teamYear ? '' : '<p class="muted">ยังไม่มีบันทึก ตัวเลขจะเริ่มขึ้นหลังอาทิตย์แรกของรอบ</p>') + '</div>';
+
+  h += '<h2>การยกเลิก / ขอคนแทนล่าสุด <span class="muted">(เห็นเฉพาะบริหาร)</span></h2><div class="card">';
+  if (!d.cancels.length) h += '<p class="muted">ยังไม่มี</p>';
+  else h += '<table><tr><th>เมื่อ</th><th>การกระทำ</th><th>เวร</th><th>ใคร</th><th>เหตุผล</th></tr>' +
+    d.cancels.map(c => '<tr><td class="muted">' + esc(c.time) + '</td><td>' + esc(c.action) + '</td><td>' + esc(c.date) + ' · ' + esc(c.pos) + '</td><td>' + esc(c.name) + '</td><td>' + esc(c.reason || '–') + '</td></tr>').join('') + '</table>';
   h += '</div><div class="actions"><button onclick="load()">รีเฟรช</button></div>';
 
   $('main').innerHTML = h;
@@ -134,9 +149,10 @@ function render(d) {
   };
   $('needBtn').onclick = () => {
     const lines = [];
-    weeks.forEach(w => P.forEach((p, i) => {
-      if (!w.slots[i] && (i < R || need.indexOf(w.date + '|' + p) !== -1)) lines.push('• ' + w.date + ' ' + p);
-    }));
+    weeks.forEach(w => {
+      w.missing.forEach(m => lines.push('• ' + w.date + ' ' + m));
+      P.forEach((p, i) => { if (isReq(w, i)) lines.push('• ' + w.date + ' ' + p + ' (ขอคนแทน)'); });
+    });
     if (!lines.length) return toast('ช่องบังคับครบทุกสัปดาห์แล้ว');
     copyText('ด่วน: ทีมกล้องต้องการคนเพิ่ม\n' + lines.join('\n') + '\nใครว่าง ลงผ่านลิงก์ส่วนตัวได้เลยครับ 🙏');
   };
