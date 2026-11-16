@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ลงชื่อเวรทีมกล้อง</title>
+<style>
+  :root { --brand:#1D5C63; --ink:#1F2A2E; --muted:#5B6B6F; --line:#DCE5E5; --soft:#EEF5F4; --warn:#C4622D; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif; color:var(--ink); background:#F7F9F9; font-size:17px; }
+  header { background:var(--brand); color:#fff; padding:16px; position:sticky; top:0; z-index:2; }
+  header h1 { font-size:20px; margin:0 0 6px; }
+  .me { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:16px; }
+  select { font-size:17px; padding:8px; border-radius:8px; border:0; min-width:160px; }
+  .quota { background:rgba(255,255,255,.18); padding:4px 10px; border-radius:20px; }
+  main { padding:12px; max-width:560px; margin:0 auto; }
+  .week { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; }
+  .week h2 { font-size:18px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; }
+  .badge { font-size:13px; padding:2px 10px; border-radius:12px; background:#FCE8B2; color:#7D5C06; }
+  .badge.ok { background:#DCEFE6; color:#1F6B45; }
+  .slot { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line); gap:8px; }
+  .slot:first-of-type { border-top:0; }
+  .pos { font-weight:600; }
+  .pos small { color:var(--warn); font-weight:400; }
+  .who { color:var(--muted); }
+  button { font-family:inherit; font-size:16px; padding:10px 16px; border-radius:10px; border:0; cursor:pointer; min-width:96px; }
+  .take { background:var(--brand); color:#fff; }
+  .mine { background:var(--soft); color:var(--brand); border:1px solid var(--brand); }
+  .slot.need { background:#FFF4E5; margin:0 -12px; padding:10px 12px; }
+  .need-tag { display:block; font-size:13px; color:#B4530B; font-weight:600; }
+  .reasons { display:flex; flex-wrap:wrap; gap:8px; padding:4px 0 12px; }
+  .reasons p { width:100%; margin:0; font-size:15px; color:var(--muted); }
+  .reasons button { min-width:0; background:var(--soft); color:var(--ink); border:1px solid var(--line); }
+  .reasons .keep { background:transparent; color:var(--brand); }
+  .copy { background:transparent; color:var(--brand); border:1px solid var(--line); width:100%; margin-top:8px; }
+  .note { font-size:14px; color:var(--muted); margin:-4px 0 6px; }
+  #toast { position:fixed; left:12px; right:12px; bottom:16px; background:#12363A; color:#fff; padding:14px; border-radius:10px; display:none; text-align:center; }
+  .hint { color:var(--muted); font-size:15px; text-align:center; padding:24px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">ลงชื่อเวรทีมกล้อง</h1>
+  <div class="me">
+    <span id="hello">กำลังโหลด…</span>
+    <span class="quota" id="quota" hidden></span>
+  </div>
+</header>
+<main id="list"><p class="hint">กำลังโหลด…</p></main>
+<div id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyrtjxK_J51RclVybAoismuXS-NWdJXmR0jrAifHXB3IGbHnnTqAofTA0HQgZStECcICw/exec';
+const TOKEN = (new URLSearchParams(location.search).get('k') || '').replace(/[^A-Za-z0-9]/g, '');
+function call(action, params) {
+  const q = new URLSearchParams(Object.assign({ api: '1', action: action, k: TOKEN }, params || {}));
+  return fetch(API + '?' + q.toString(), { credentials: 'omit', cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+}
+let DATA = null, ME = '', MEINFO = null, CANCELING = null;
+const $ = id => document.getElementById(id);
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500);
+}
+
+function load() {
+  call('data').then(d => { setData(d); render(); })
+    .catch(e => { $('list').innerHTML = '<p class="hint">โหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง (' + esc(e.message) + ')</p>'; });
+}
+
+function setData(d) {
+  DATA = d; MEINFO = d.me; ME = d.me && d.me.active ? d.me.name : '';
+  $('title').textContent = d.title || 'ลงชื่อเวรทีมกล้อง';
+  if (!d.me) $('hello').textContent = 'ดูตารางอย่างเดียว · ใช้ลิงก์ส่วนตัวเพื่อลงชื่อ';
+  else if (!d.me.active) $('hello').textContent = 'สวัสดี ' + d.me.name + ' · ตอนนี้สถานะคือพัก';
+  else $('hello').textContent = 'สวัสดี ' + d.me.name;
+}
+
+function myCount() {
+  return DATA.weeks.reduce((n, w) => n + (w.slots.indexOf(ME) !== -1 ? 1 : 0), 0);
+}
+
+function render() {
+  const q = $('quota');
+  if (ME) { q.hidden = false; q.textContent = 'ลงแล้ว ' + myCount() + ' / ' + DATA.maxPerPerson + ' สัปดาห์'; }
+  else q.hidden = true;
+
+  const me = MEINFO;
+  const list = $('list'); list.innerHTML = '';
+  if (!ME) list.innerHTML = '<p class="hint">' + (MEINFO ? 'ติดต่อหัวหน้าทีมถ้าต้องการกลับมาลงเวร' : 'หน้านี้ดูได้อย่างเดียว ถ้าต้องการลงชื่อ ให้เปิดลิงก์ส่วนตัวที่หัวหน้าทีมส่งให้ทาง LINE') + '</p>';
+
+  DATA.weeks.forEach(w => {
+    const filled = w.slots.slice(0, DATA.requiredCount).filter(Boolean).length;
+    const card = document.createElement('section'); card.className = 'week';
+    const ok = filled === DATA.requiredCount;
+    card.innerHTML = '<h2>อาทิตย์ ' + w.date + '<span class="badge' + (ok ? ' ok' : '') + '">' +
+      (ok ? 'ช่องหลักครบ' : 'ช่องหลักขาด ' + (DATA.requiredCount - filled)) + '</span></h2>' +
+      (w.note ? '<p class="note">' + esc(w.note) + '</p>' : '');
+
+    DATA.positions.forEach((pos, i) => {
+      const who = w.slots[i], row = document.createElement('div');
+      const need = !who && (DATA.needs || []).indexOf(w.date + '|' + pos) !== -1;
+      row.className = 'slot' + (need ? ' need' : '');
+      const req = i < DATA.requiredCount ? ' <small>★ ต้องมี</small>' : '';
+      const tag = need ? '<span class="need-tag">ต้องการคนแทน</span>' : '';
+      let right = '';
+      if (who && who === ME) right = '<button class="mine" data-a="cancel">ยกเลิก</button>';
+      else if (who) right = '<span class="who">' + esc(who) + '</span>';
+      else if (ME && !(i === DATA.switcherIndex && me && !me.canSwitch) && w.slots.indexOf(ME) === -1)
+        right = '<button class="take" data-a="take">' + (need ? 'รับแทน' : 'ลงชื่อ') + '</button>';
+      else right = '<span class="who">ว่าง</span>';
+      row.innerHTML = '<span class="pos">' + esc(pos) + req + tag + '</span>' + right;
+      const b = row.querySelector('button');
+      if (b) b.onclick = () => {
+        if (b.dataset.a === 'take') take(w.row, i, false, b);
+        else { CANCELING = w.row + '|' + i; render(); }
+      };
+      card.appendChild(row);
+      if (CANCELING === w.row + '|' + i) {
+        const box = document.createElement('div'); box.className = 'reasons';
+        box.innerHTML = '<p>ยกเลิกเพราะ… (หัวหน้าทีมเห็นคนเดียว)</p>';
+        ['ป่วย', 'ติดธุระ', 'ลา', 'อื่นๆ'].forEach(rs => {
+          const rb = document.createElement('button'); rb.textContent = rs;
+          rb.onclick = () => drop(w.row, i, rb, rs);
+          box.appendChild(rb);
+        });
+        const kb = document.createElement('button'); kb.className = 'keep'; kb.textContent = 'ไม่ยกเลิก';
+        kb.onclick = () => { CANCELING = null; render(); };
+        box.appendChild(kb);
+        card.appendChild(box);
+      }
+    });
+
+    const c = document.createElement('button'); c.className = 'copy';
+    c.textContent = 'คัดลอกสรุปเวรไปวางในกลุ่ม LINE';
+    c.onclick = () => copyText(summary(w));
+    card.appendChild(c);
+    list.appendChild(card);
+  });
+}
+
+function take(row, i, force, btn) {
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  call('signup', { row: row, pos: i, force: force ? '1' : '0' }).then(r => {
+    if (r.ok) { setData(r.data); render(); toast('ลงชื่อเรียบร้อย ขอบคุณที่รับใช้ครับ'); }
+    else if (r.needConfirm) { if (confirm(r.msg)) take(row, i, true, btn); else render(); }
+    else { toast(r.msg); load(); }
+  }).catch(e => { toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'); load(); });
+}
+
+function drop(row, i, btn, reason) {
+  btn.disabled = true; btn.textContent = 'กำลังยกเลิก…';
+  call('cancel', { row: row, pos: i, reason: reason }).then(r => {
+    CANCELING = null;
+    if (r.ok) { setData(r.data); render(); toast('ยกเลิกแล้ว ขอให้หายดี/ผ่านไปด้วยดีนะครับ ระบบแจ้งหัวหน้าทีมให้แล้ว'); }
+    else { toast(r.msg); load(); }
+  }).catch(e => { CANCELING = null; toast('ยกเลิกไม่สำเร็จ ลองใหม่อีกครั้ง'); load(); });
+}
+
+function summary(w) {
+  let t = 'เวรทีมกล้อง อาทิตย์ ' + w.date + (w.note ? ' (' + w.note + ')' : '');
+  const needs = DATA.positions.filter((p, i) => !w.slots[i] && (DATA.needs || []).indexOf(w.date + '|' + p) !== -1);
+  if (needs.length) t = 'ด่วน: ต้องการคนแทน ' + needs.join(', ') + '\n' + t;
+  DATA.positions.forEach((p, i) => { if (i < DATA.requiredCount || w.slots[i]) t += '\n' + p + ': ' + (w.slots[i] || '(ว่าง)'); });
+  if (needs.length) t += '\nลงชื่อผ่านลิงก์ส่วนตัวของตัวเองได้เลยครับ';
+  return t;
+}
+
+function copyText(t) {
+  const done = () => toast('คัดลอกแล้ว ไปวางในกลุ่ม LINE ได้เลย');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => fallback(t, done));
+  else fallback(t, done);
+}
+function fallback(t, done) {
+  const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+  try { document.execCommand('copy'); done(); } catch (e) { prompt('คัดลอกข้อความนี้', t); }
+  a.remove();
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]); }
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ดทีมกล้อง</title>
+<style>
+  :root { --brand:#1D5C63; --ink:#1F2A2E; --muted:#5B6B6F; --line:#DCE5E5; --soft:#EEF5F4; --bg:#F7F9F9;
+          --ok-bg:#DCEFE6; --ok:#1F6B45; --warn-bg:#FCE8B2; --warn:#7D5C06; --bad-bg:#F9DAD3; --bad:#9A2F1C; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif; color:var(--ink); background:var(--bg); font-size:16px; }
+  header { background:var(--brand); color:#fff; padding:14px 16px; }
+  header h1 { font-size:19px; margin:0; }
+  header p { margin:2px 0 0; font-size:14px; opacity:.85; }
+  main { padding:12px; max-width:960px; margin:0 auto; }
+  h2 { font-size:17px; margin:20px 0 8px; }
+  .tiles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  @media (min-width:720px) { .tiles { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+  .tile { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .tile .lbl { font-size:13px; color:var(--muted); }
+  .tile .num { font-size:26px; font-weight:700; line-height:1.2; }
+  .tile .sub { font-size:13px; color:var(--muted); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; font-weight:600; color:var(--muted); font-size:13px; padding:6px 4px; border-bottom:1px solid var(--line); }
+  td { padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .grid-wrap { overflow-x:auto; }
+  .cell { display:inline-block; padding:2px 8px; border-radius:8px; font-size:13px; white-space:nowrap; }
+  .cell.fill { background:var(--soft); color:var(--brand); }
+  .cell.empty { background:var(--warn-bg); color:var(--warn); }
+  .cell.need { background:var(--bad-bg); color:var(--bad); font-weight:600; }
+  .cell.opt { color:var(--muted); }
+  .status { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .s-ok { background:var(--ok-bg); color:var(--ok); } .s-warn { background:var(--warn-bg); color:var(--warn); } .s-bad { background:var(--bad-bg); color:var(--bad); }
+  .person { display:grid; grid-template-columns:96px 1fr auto; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .person:last-child { border-bottom:0; }
+  .bar { display:flex; gap:3px; }
+  .bar span { flex:1; height:10px; border-radius:4px; background:var(--line); max-width:40px; }
+  .bar span.on { background:var(--brand); }
+  .bar span.over { background:var(--bad); }
+  .tag { font-size:12px; color:var(--muted); margin-left:4px; }
+  .rest { opacity:.55; }
+  button { font-family:inherit; font-size:15px; padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--brand); cursor:pointer; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .hint { color:var(--muted); font-size:15px; text-align:center; padding:28px 8px; }
+  .muted { color:var(--muted); font-size:13px; }
+  #toast { position:fixed; left:12px; right:12px; bottom:16px; background:#12363A; color:#fff; padding:14px; border-radius:10px; display:none; text-align:center; }
+</style>
+</head>
+<body>
+<header><h1>แดชบอร์ดทีมกล้อง</h1><p id="sub">กำลังโหลด…</p></header>
+<main id="main"><p class="hint">กำลังโหลด…</p></main>
+<div id="toast"></div>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyrtjxK_J51RclVybAoismuXS-NWdJXmR0jrAifHXB3IGbHnnTqAofTA0HQgZStECcICw/exec';
+const TOKEN = (new URLSearchParams(location.search).get('k') || '').replace(/[^A-Za-z0-9]/g, '');
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]); }
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3000); }
+function copyText(t) {
+  const done = () => toast('คัดลอกแล้ว ไปวางในกลุ่ม LINE ได้เลย');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => prompt('คัดลอกข้อความนี้', t));
+  else prompt('คัดลอกข้อความนี้', t);
+}
+
+function load() {
+  if (window.MOCK) return render(window.MOCK);
+  fetch(API + '?' + new URLSearchParams({ api: '1', action: 'dashboard', k: TOKEN }), { credentials: 'omit', cache: 'no-store' })
+    .then(r => r.json())
+    .then(d => d.ok ? render(d) : ($('main').innerHTML = '<p class="hint">' + esc(d.msg || 'เปิดไม่ได้') + '</p>', $('sub').textContent = ''))
+    .catch(e => { $('main').innerHTML = '<p class="hint">โหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง</p>'; });
+}
+
+function render(d) {
+  const R = d.requiredCount, need = d.needs || [];
+  const weeks = d.weeks, P = d.positions;
+  $('sub').textContent = 'รอบ ' + weeks[0].date + ' – ' + weeks[weeks.length - 1].date + ' · อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  const okWeeks = weeks.filter(w => w.slots.slice(0, R).every(Boolean)).length;
+  const filled = weeks.reduce((n, w) => n + w.slots.filter(Boolean).length, 0);
+  const total = weeks.length * P.length;
+  const active = d.people.filter(p => p.active);
+  const notYet = active.filter(p => p.count === 0);
+  const over = active.filter(p => p.count > d.maxPerPerson);
+  const tile = (lbl, num, sub, cls) => '<div class="tile"><div class="lbl">' + lbl + '</div><div class="num">' + num + '</div><div class="sub">' + (cls ? '<span class="status ' + cls + '">' + sub + '</span>' : sub) + '</div></div>';
+
+  let h = '<section class="tiles">' +
+    tile('สัปดาห์ที่ช่องบังคับครบ', okWeeks + ' / ' + weeks.length, okWeeks === weeks.length ? '✓ ครบทุกสัปดาห์' : '! ยังขาด ' + (weeks.length - okWeeks) + ' สัปดาห์', okWeeks === weeks.length ? 's-ok' : 's-warn') +
+    tile('ต้องการคนแทน', need.length, need.length ? '✕ มีคนยกเลิก ต้องหาคนแทน' : '✓ ไม่มี', need.length ? 's-bad' : 's-ok') +
+    tile('ช่องที่ลงชื่อแล้ว', filled + ' / ' + total, Math.round(filled / total * 100) + '% ของทุกช่อง') +
+    tile('ยังไม่ได้ลงเลย', notYet.length + ' คน', over.length ? over.length + ' คนลงเกินโควตา' : 'จาก ' + active.length + ' คนที่รับใช้อยู่') +
+    '</section>';
+
+  h += '<h2>ตารางเวรรอบนี้</h2><div class="card grid-wrap"><table><tr><th>อาทิตย์</th>' +
+    P.map((p, i) => '<th>' + esc(p) + (i < R ? ' ★' : '') + '</th>').join('') + '<th>สถานะ</th></tr>';
+  weeks.forEach(w => {
+    const miss = w.slots.slice(0, R).filter(x => !x).length;
+    const hasNeed = P.some((p, i) => !w.slots[i] && need.indexOf(w.date + '|' + p) !== -1);
+    h += '<tr><td><b>' + esc(w.date) + '</b>' + (w.note ? '<div class="muted">' + esc(w.note) + '</div>' : '') + '</td>';
+    P.forEach((p, i) => {
+      const v = w.slots[i];
+      const isNeed = !v && need.indexOf(w.date + '|' + p) !== -1;
+      const cls = v ? 'fill' : isNeed ? 'need' : i < R ? 'empty' : 'opt';
+      h += '<td><span class="cell ' + cls + '">' + (v ? esc(v) : isNeed ? 'ต้องการคนแทน' : i < R ? 'ว่าง' : '–') + '</span></td>';
+    });
+    h += '<td>' + (hasNeed ? '<span class="status s-bad">✕ หาคนแทน</span>' : miss ? '<span class="status s-warn">! ขาด ' + miss + '</span>' : '<span class="status s-ok">✓ ครบ</span>') + '</td></tr>';
+  });
+  h += '</table></div>';
+
+  h += '<h2>ภาระรายคน <span class="muted">(โควตา ' + d.maxPerPerson + ' สัปดาห์ต่อรอบ)</span></h2><div class="card">';
+  const sorted = d.people.slice().sort((a, b) => (b.active - a.active) || (b.count - a.count) || a.name.localeCompare(b.name, 'th'));
+  sorted.forEach(p => {
+    const slots = Math.max(d.maxPerPerson, p.count);
+    let bar = '';
+    for (let i = 0; i < slots; i++) bar += '<span class="' + (i < p.count ? (i >= d.maxPerPerson ? 'over' : 'on') : '') + '"></span>';
+    const right = !p.active ? '<span class="muted">พัก</span>' : p.count > d.maxPerPerson ? '<span class="status s-bad">✕ เกินโควตา</span>' : p.count === 0 ? '<span class="status s-warn">! ยังไม่ลง</span>' : '<span class="muted">' + p.count + ' / ' + d.maxPerPerson + '</span>';
+    h += '<div class="person' + (p.active ? '' : ' rest') + '"><div>' + esc(p.name) + (p.canSwitch ? '<span class="tag">SW</span>' : '') + '</div>' +
+      '<div class="bar" title="' + esc(p.weeks.join(', ')) + '">' + bar + '</div><div>' + right + '</div></div>';
+  });
+  h += '<p class="muted">SW = คุม Switcher ได้ · แถบหนึ่งช่อง = หนึ่งสัปดาห์ · แตะค้างที่แถบเพื่อดูวันที่</p>';
+  h += '<div class="actions"><button id="remind">คัดลอกข้อความชวนคนที่ยังไม่ลง</button><button id="needBtn">คัดลอกข้อความหาคนแทน</button></div></div>';
+
+  h += '<h2>การยกเลิกล่าสุด <span class="muted">(เห็นเฉพาะหัวหน้า)</span></h2><div class="card">';
+  if (!d.cancels.length) h += '<p class="muted">ยังไม่มีการยกเลิก</p>';
+  else h += '<table><tr><th>เมื่อ</th><th>เวร</th><th>ใคร</th><th>เหตุผล</th></tr>' +
+    d.cancels.map(c => '<tr><td class="muted">' + esc(c.time) + '</td><td>' + esc(c.date) + ' · ' + esc(c.pos) + '</td><td>' + esc(c.name) + '</td><td>' + esc(c.reason || '–') + '</td></tr>').join('') + '</table>';
+  h += '</div><div class="actions"><button onclick="load()">รีเฟรช</button></div>';
+
+  $('main').innerHTML = h;
+  $('remind').onclick = () => {
+    if (!notYet.length) return toast('ทุกคนลงชื่อแล้ว');
+    copyText('ทีมกล้องครับ 📷 รอบ ' + weeks[0].date + ' – ' + weeks[weeks.length - 1].date + ' ยังมีช่องว่างอยู่\n' +
+      notYet.map(p => p.name).join(', ') + ' ยังไม่ได้ลงเลย ลงผ่านลิงก์ส่วนตัวได้เลยนะครับ 🙏');
+  };
+  $('needBtn').onclick = () => {
+    const lines = [];
+    weeks.forEach(w => P.forEach((p, i) => {
+      if (!w.slots[i] && (i < R || need.indexOf(w.date + '|' + p) !== -1)) lines.push('• ' + w.date + ' ' + p);
+    }));
+    if (!lines.length) return toast('ช่องบังคับครบทุกสัปดาห์แล้ว');
+    copyText('ด่วน: ทีมกล้องต้องการคนเพิ่ม\n' + lines.join('\n') + '\nใครว่าง ลงผ่านลิงก์ส่วนตัวได้เลยครับ 🙏');
+  };
+}
+load();
+</script>
+</body>
+</html>
