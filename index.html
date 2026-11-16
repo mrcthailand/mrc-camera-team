@@ -62,6 +62,8 @@
   .alert { background:var(--warn-bg); border:1px solid #F3D7A6; border-radius:10px; padding:10px; font-size:15px; margin-bottom:8px; }
   .links a { display:block; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; color:var(--brand); text-decoration:none; font-weight:600; }
   .links a span { display:block; color:var(--muted); font-weight:400; font-size:14px; }
+  .steps { margin:0; padding-left:20px; line-height:1.6; font-size:16px; }
+  .steps li { margin-bottom:8px; }
   #toast { position:fixed; left:12px; right:12px; bottom:16px; background:#12363A; color:#fff; padding:14px; border-radius:10px; display:none; text-align:center; z-index:5; }
 </style>
 </head>
@@ -106,6 +108,7 @@ function tabs() {
   if (MEINFO) t.push(['mine', 'ของฉัน']);
   if (D.people) t.push(['lead', 'คุมทีม']);
   if (MEINFO && MEINFO.admin) t.push(['admin', 'บริหาร']);
+  t.push(['help', 'วิธีใช้']);
   if (!t.some(x => x[0] === TAB)) TAB = 'table';
   return t;
 }
@@ -115,7 +118,7 @@ function render() {
   $('nav').innerHTML = tabs().map(t => '<button data-t="' + t[0] + '" class="' + (TAB === t[0] ? 'on' : '') + '">' + t[1] + '</button>').join('');
   $('nav').querySelectorAll('button').forEach(b => b.onclick = () => { TAB = b.dataset.t; OPEN = null; render(); scrollTo(0, 0); });
   const m = $('main'); m.innerHTML = '';
-  ({ table: viewTable, mine: viewMine, lead: viewLead, admin: viewAdmin })[TAB](m);
+  ({ table: viewTable, mine: viewMine, lead: viewLead, admin: viewAdmin, help: viewHelp })[TAB](m);
 }
 
 /* ---------- helpers ---------- */
@@ -345,6 +348,33 @@ function viewAdmin(m) {
   m.appendChild(el('<a href="dashboard.html?k=' + TOKEN + '">แดชบอร์ดทีม<span>ภาพรวมรอบนี้ ภาระรายคน สรุปการรับใช้รายเดือน การยกเลิกและเหตุผล</span></a>' +
     '<a href="links.html?k=' + TOKEN + '">ส่งลิงก์ส่วนตัวให้ทีม<span>คัดลอกหรือส่งทาง LINE ทีละคน ติ๊กว่าส่งแล้ว</span></a>' +
     '<p class="muted">ตั้งสถานะพัก / รับรอง Switcher / เพิ่มคนใหม่: แก้ในชีต แท็บรายชื่อ (คนใหม่: รัน generateLinks)</p>', 'links'));
+}
+
+/* ---------- แท็บ: วิธีใช้ (ตามบทบาท) ---------- */
+function viewHelp(m) {
+  const card = (title, items) => el('<h2>' + title + '</h2><ol class="steps">' + items.map(x => '<li>' + x + '</li>').join('') + '</ol>', 'card');
+  if (!MEINFO) m.appendChild(el('<p class="hint">หน้านี้ดูได้อย่างเดียว ถ้าต้องการลงชื่อ ให้เปิดลิงก์ส่วนตัวที่หัวหน้าทีมส่งให้ทาง LINE</p>'));
+  m.appendChild(card('ตากล้อง', [
+    '<b>ลงชื่อ:</b> แท็บ "ตารางเวร" → กด <b>ลงชื่อ</b> ในช่องที่ว่าง (ไม่เกิน ' + D.maxPerPerson + ' สัปดาห์ต่อรอบ)',
+    '<b>ติดธุระ / ลา:</b> กดปุ่มที่ช่องของตัวเอง แล้วเลือกเหตุผล · ล่วงหน้าเกิน ' + D.notifyDays + ' วัน = ยกเลิก ช่องว่างทันที · ไม่ถึง ' + D.notifyDays + ' วัน = <b>ขอคนแทน</b> ชื่อยังอยู่จนมีคนรับ',
+    '<b>ป่วย:</b> กด <b>ขอคนแทน</b> แล้วเลือก "ป่วย" เสมอ · หายแล้วมาได้ กด <b>ถอนคำขอ</b>',
+    '<b>รับแทนเพื่อน:</b> ช่องที่มีป้ายสีส้ม กด <b>รับแทน</b>',
+    '<b>ของฉัน:</b> ดูเวรที่จะมาถึง และจำนวนครั้งที่รับใช้ เดือนนี้ / ปีนี้',
+    'เหตุผลการลาเห็นเฉพาะบริหาร · ลิงก์นี้เป็นของคุณคนเดียว อย่าส่งต่อ'
+  ]));
+  if (MEINFO && (MEINFO.canSwitch || MEINFO.admin)) m.appendChild(card('Switcher (สัปดาห์ที่คุณคุม)', [
+    'แท็บ <b>คุมทีม</b> จะขึ้นเมื่อคุณลงช่อง Switcher ของสัปดาห์นั้น',
+    'มีคนขอคนแทน: รอเพื่อนกดรับแทน หรือเลือกชื่อคนแทนในช่องนั้นได้เลย',
+    'ก่อนวันอาทิตย์: กด <b>คัดลอกสรุปเวร</b> ไปวางในกลุ่ม LINE',
+    '<b>หลังนมัสการ:</b> เลือก มาตามตาราง / ขาด / มีคนมาแทน แล้วกด <b>บันทึกหลังนมัสการ</b> (ทุกคนมาครบ กดบันทึกได้เลย)',
+    'ตัวเลขนี้คือประวัติการรับใช้ของทุกคน · ถ้าลืม ระบบบันทึกตามตารางให้คืนนั้น 21:00'
+  ]));
+  if (MEINFO && MEINFO.admin) m.appendChild(card('บริหาร', [
+    'แท็บ <b>บริหาร</b> → <b>ส่งลิงก์ให้ทีม</b>: ส่งทาง LINE ทีละคน (แชตส่วนตัวเท่านั้น)',
+    '<b>แดชบอร์ด:</b> ช่องที่ว่าง คนที่ยังไม่ลง คำขอคนแทนพร้อมเหตุผล ตัวเลขการรับใช้รายเดือน',
+    'แท็บ <b>คุมทีม</b>: ใส่/เปลี่ยนชื่อได้ทุกสัปดาห์ รวมช่อง Switcher',
+    'งานในชีต (เพิ่มคน พัก รับรอง Switcher เปิดรอบใหม่): ดูแท็บ <b>คู่มือ</b> ในชีตตารางทีมกล้อง'
+  ]));
 }
 
 load();
